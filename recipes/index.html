@@ -69,6 +69,87 @@
 
 <slide class="row-fluid">
   <div class="col-sm-12">
+    <h3>Data Import</h3>
+    <br/>
+    <div>
+      <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CREATE INDEX ON :Recipe(id);
+CREATE INDEX ON :Ingredient(name);
+CREATE INDEX ON :Keyword(name);
+CREATE INDEX ON :DietType(name);
+CREATE INDEX ON :Author(name);
+CREATE INDEX ON :Collection(name);
+
+:params jsonFile =&gt; "https://raw.githubusercontent.com/mneedham/bbcgoodfood/master/stream_clean.json";
+
+CALL apoc.load.json($jsonFile) YIELD value
+WITH value.page.article.id AS id,
+       value.page.title AS title,
+       value.page.article.description AS description,
+       value.page.recipe.cooking_time AS cookingTime,
+       value.page.recipe.prep_time AS preparationTime,
+       value.page.recipe.skill_level AS skillLevel
+MERGE (r:Recipe {id: id})
+SET r.cookingTime = cookingTime,
+    r.preparationTime = preparationTime,
+    r.name = title,
+    r.description = description,
+    r.skillLevel = skillLevel;
+
+CALL apoc.load.json($jsonFile) YIELD value
+WITH value.page.article.id AS id,
+       value.page.article.author AS author
+MERGE (a:Author {name: author})
+WITH a,id
+MATCH (r:Recipe {id:id})
+MERGE (a)-[:WROTE]-&gt;(r);
+
+CALL apoc.load.json($jsonFile) YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.ingredients AS ingredients
+MATCH (r:Recipe {id:id})
+FOREACH (ingredient IN ingredients |
+  MERGE (i:Ingredient {name: ingredient})
+  MERGE (r)-[:CONTAINS_INGREDIENT]-&gt;(i)
+);
+
+CALL apoc.load.json($jsonFile) YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.keywords AS keywords
+MATCH (r:Recipe {id:id})
+FOREACH (keyword IN keywords |
+  MERGE (k:Keyword {name: keyword})
+  MERGE (r)-[:KEYWORD]-&gt;(k)
+);
+
+CALL apoc.load.json($jsonFile) YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.diet_types AS dietTypes
+MATCH (r:Recipe {id:id})
+FOREACH (dietType IN dietTypes |
+  MERGE (d:DietType {name: dietType})
+  MERGE (r)-[:DIET_TYPE]-&gt;(d)
+);
+
+CALL apoc.load.json($jsonFile) YIELD value
+WITH value.page.article.id AS id,
+       value.page.recipe.collections AS collections
+MATCH (r:Recipe {id:id})
+FOREACH (collection IN collections |
+  MERGE (c:Collection {name: collection})
+  MERGE (r)-[:COLLECTION]-&gt;(c)
+);<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
     <h3>Graph Schema</h3>
     <br/>
     <div>
@@ -97,7 +178,7 @@
 <div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (i:Ingredient)&lt;-[rel:CONTAINS_INGREDIENT]-(r:Recipe)
-RETURN i.value, count(rel) as recipes
+RETURN i.name, count(rel) as recipes
 ORDER BY recipes DESC<!--/code--></pre>
 </div>
 </div>
@@ -122,8 +203,8 @@ The following query returns the recipes in this collection:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (:Collection {value: "Chocolate cake"})&lt;-[:COLLECTION]-(recipe)
-RETURN recipe.id, recipe.title, recipe.description<!--/code--></pre>
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (:Collection {name: "Chocolate cake"})&lt;-[:COLLECTION]-(recipe)
+RETURN recipe.id, recipe.name, recipe.description<!--/code--></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -167,7 +248,7 @@ What other cake are there similar to this one?</p>
 <div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]-&gt;(i:Ingredient)&lt;-[:CONTAINS_INGREDIENT]-(rec:Recipe)
-RETURN rec.id, rec.title, collect(i.value) AS commonIngredients
+RETURN rec.id, rec.name, collect(i.name) AS commonIngredients
 ORDER BY size(commonIngredients) DESC
 LIMIT 10<!--/code--></pre>
 </div>
@@ -199,10 +280,14 @@ LIMIT 10<!--/code--></pre>
     <h3>What other recipes has the author published?</h3>
     <br/>
     <div>
-      <div class="listingblock">
+      <div class="paragraph">
+<p>Another type of recommendation query would be to find the other recipes published by the author of seriously rich chocolate cake.
+The following query does this:</p>
+</div>
+<div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (rec:Recipe)&lt;-[:WROTE]-(a:Author)-[:WROTE]-&gt;(r:Recipe {id:'97123'})
-RETURN rec.id, rec.title, rec.description<!--/code--></pre>
+RETURN rec.id, rec.name, rec.description<!--/code--></pre>
 </div>
 </div>
 	</div>
@@ -223,9 +308,9 @@ RETURN rec.id, rec.title, rec.description<!--/code--></pre>
    <div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
-WHERE (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: "chilli"})
-RETURN r.title AS recipe,
-       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+WHERE (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {name: "chilli"})
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.name]
        AS ingredients<!--/code--></pre>
 </div>
 </div>
@@ -247,10 +332,10 @@ RETURN r.title AS recipe,
    <div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
-WHERE (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: "chilli"})
-AND   (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: "prawn"})
-RETURN r.title AS recipe,
-       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+WHERE (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {name: "chilli"})
+AND   (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {name: "prawn"})
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.name]
        AS ingredients
 LIMIT 20<!--/code--></pre>
 </div>
@@ -279,9 +364,9 @@ LIMIT 20<!--/code--></pre>
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
 WHERE all(i in $ingredients WHERE exists(
-  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: i})))
-RETURN r.title AS recipe,
-       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {name: i})))
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.name]
        AS ingredients
 ORDER BY size(ingredients)
 LIMIT 20<!--/code--></pre>
@@ -309,12 +394,12 @@ LIMIT 20<!--/code--></pre>
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
 
 WHERE all(i in $ingredients WHERE exists(
-  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: i})))
+  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {name: i})))
 AND none(i in $allergens WHERE exists(
-  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: i})))
+  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {name: i})))
 
-RETURN r.title AS recipe,
-       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+RETURN r.name AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.name]
        AS ingredients
 ORDER BY size(ingredients)
 LIMIT 20<!--/code--></pre>
