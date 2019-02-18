@@ -1,0 +1,327 @@
+<style type="text/css" media="screen">
+/*
+.nodes-image {
+	margin:-100;
+}
+*/	
+@import url("//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css");
+
+.imageblock .content img, .image img {max-width: 900px;max-height: 300px;}
+.deck h3, .deck h4 {display: block !important;margin-bottom:8px;margin-top:5px;}
+.listingblock {margin:8px;}
+.pull-bottom {position:relative;bottom:1em;}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note:before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip:before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning:before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution:before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important:before{content:"\f06a";color:#bf0000}
+.admonitionblock.note.speaker { display:none; }
+</style>
+<style type="text/css" media="screen">
+/* #editor.maximize-editor .CodeMirror-code { font-size:24px; line-height:26px; } */
+</style>
+<article class="guide" ng-controller="AdLibDataController">
+  <carousel class="deck container-fluid">
+    <!--slide class="row-fluid">
+      <div class="col-sm-3">
+        <h3>Recipes Guide</h3>
+        <p class="lead">Information</p>
+			<!dl>
+				
+				
+				
+				
+				
+			</dl>
+		</div>
+      <div class="col-sm-9">
+        <figure>
+          <img style="width:300px" src=""/>
+        </figure>
+      </div>
+    </slide-->
+    
+
+
+   <h4>Recipes Guide</h4>
+   
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Recipes Overview</h3>
+    <br/>
+    <div>
+      <div class="col-lg-6">
+<img src="//localhost:8001/img/pole_model_visual.jpeg" class="img-responsive">
+</div>
+<div class="col-lg-6">
+<div class="paragraph">
+<p>This guide will demonstrate how Neo4j can be used to make sense of recipes data.</p>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Graph Schema</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Let&#8217;s review the metagraph, and see the types of nodes and relationships we&#8217;re going to be working with.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CALL db.schema()<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Most common ingredients</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>What are the most popular ingredients and in how many recipes have they been used?</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (i:Ingredient)&lt;-[rel:CONTAINS_INGREDIENT]-(r:Recipe)
+RETURN i.value, count(rel) as recipes
+ORDER BY recipes DESC<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The items at the top of the list aren&#8217;t all that surprising - olive oil, butter, and garlic!
+Further down the list we can see some ingredients that are probably used in cakes: sugar, milk, self-raising flour.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>I want chocolate cake!</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>This dataset also contains collections, and one of the tastiest looking ones is the collection of chocolate cakes.
+The following query returns the recipes in this collection:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (:Collection {value: "Chocolate cake"})&lt;-[:COLLECTION]-(recipe)
+RETURN recipe.id, recipe.title, recipe.description<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A hunger inducing list, but let&#8217;s not be greedy, we&#8217;ll zoom in on that seriously rich chocolate cake.</p>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Seriously rich chocolate cake</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>We&#8217;ll start with the following query, which returns a graph of the recipe and its ingredients:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH path = (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]-&gt;(i:Ingredient)
+RETURN path<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Are there any similar cakes to this one?</h3>
+    <br/>
+    <div>
+      <div class="paragraph">
+<p>Ok so we&#8217;ve now baked this cake a few times and while it was delicious, we&#8217;d like to try out some other recipes.
+What other cake are there similar to this one?</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]-&gt;(i:Ingredient)&lt;-[:CONTAINS_INGREDIENT]-(rec:Recipe)
+RETURN rec.id, rec.title, collect(i.value) AS commonIngredients
+ORDER BY size(commonIngredients) DESC
+LIMIT 10<!--/code--></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The query above:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>finds all the ingredients in the seriously rich chocolate cake</p>
+</li>
+<li>
+<p>finds other recipes that also contain these ingredients</p>
+</li>
+<li>
+<p>returns the recipes that contain the most common ingredients</p>
+</li>
+</ul>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>What other recipes has the author published?</h3>
+    <br/>
+    <div>
+      <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (rec:Recipe)&lt;-[:WROTE]-(a:Author)-[:WROTE]-&gt;(r:Recipe {id:'97123'})
+RETURN rec.id, rec.title, rec.description<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>What can I make with the ingredients in my kitchen?</h3>
+    <br/>
+    <div>
+      
+
+
+   <h4>Show me the chillis</h4>
+   <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
+WHERE (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: "chilli"})
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+       AS ingredients<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>What can I make with the ingredients in my kitchen?</h3>
+    <br/>
+    <div>
+      
+
+
+   <h4>Recipes with multiple ingredients (Part 1)</h4>
+   <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
+WHERE (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: "chilli"})
+AND   (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: "prawn"})
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+       AS ingredients
+LIMIT 20<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>What can I make with the ingredients in my kitchen?</h3>
+    <br/>
+    <div>
+      
+
+
+   <h4>Recipes with multiple ingredients (Part 2)</h4>
+   <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->:param ingredients =&gt;   ["chilli", "prawn"];<!--/code--></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
+WHERE all(i in $ingredients WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: i})))
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+       AS ingredients
+ORDER BY size(ingredients)
+LIMIT 20<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+
+
+
+<slide class="row-fluid">
+  <div class="col-sm-12">
+    <h3>Mark&#8217;s allergic to all the things</h3>
+    <br/>
+    <div>
+      <div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->:param allergens =&gt;   ["egg", "milk"];
+:param ingredients =&gt; ["coconut milk", "rice"];<!--/code--></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->MATCH (r:Recipe)
+
+WHERE all(i in $ingredients WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: i})))
+AND none(i in $allergens WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]-&gt;(:Ingredient {value: i})))
+
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]-&gt;(i) | i.value]
+       AS ingredients
+ORDER BY size(ingredients)
+LIMIT 20<!--/code--></pre>
+</div>
+</div>
+	</div>
+  </div>
+</slide>
+  </carousel>
+</article>

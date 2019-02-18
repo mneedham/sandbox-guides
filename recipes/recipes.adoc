@@ -1,0 +1,176 @@
+= Recipes Guide
+
+:neo4j-version: 3.5.3
+:author: Mark Needham
+:twitter: @markhneedham
+
+== Recipes Overview
+
+
+++++
+<div class="col-lg-6">
+++++
+
+[subs=attributes]
+++++
+<img src="{img}/pole_model_visual.jpeg" class="img-responsive">
+++++
+
+++++
+</div>
+++++
+
+++++
+<div class="col-lg-6">
+++++
+
+This guide will demonstrate how Neo4j can be used to make sense of recipes data.
+
+
+++++
+</div>
+++++
+
+
+== Graph Schema
+
+Let's review the metagraph, and see the types of nodes and relationships we're going to be working with.
+
+[source,cypher]
+----
+CALL db.schema()
+----
+
+== Most common ingredients
+
+What are the most popular ingredients and in how many recipes have they been used?
+
+[source,cypher]
+----
+MATCH (i:Ingredient)<-[rel:CONTAINS_INGREDIENT]-(r:Recipe)
+RETURN i.value, count(rel) as recipes
+ORDER BY recipes DESC
+----
+
+The items at the top of the list aren't all that surprising - olive oil, butter, and garlic!
+Further down the list we can see some ingredients that are probably used in cakes: sugar, milk, self-raising flour.
+
+== I want chocolate cake!
+
+This dataset also contains collections, and one of the tastiest looking ones is the collection of chocolate cakes.
+The following query returns the recipes in this collection:
+
+[source, cypher]
+----
+MATCH (:Collection {value: "Chocolate cake"})<-[:COLLECTION]-(recipe)
+RETURN recipe.id, recipe.title, recipe.description
+----
+
+A hunger inducing list, but let's not be greedy, we'll zoom in on that seriously rich chocolate cake.
+
+== Seriously rich chocolate cake
+
+We'll start with the following query, which returns a graph of the recipe and its ingredients:
+
+[source, cypher]
+----
+MATCH path = (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]->(i:Ingredient)
+RETURN path
+----
+
+== Are there any similar cakes to this one?
+
+Ok so we've now baked this cake a few times and while it was delicious, we'd like to try out some other recipes.
+What other cake are there similar to this one?
+
+[source, cypher]
+----
+MATCH (r:Recipe {id:'97123'})-[:CONTAINS_INGREDIENT]->(i:Ingredient)<-[:CONTAINS_INGREDIENT]-(rec:Recipe)
+RETURN rec.id, rec.title, collect(i.value) AS commonIngredients
+ORDER BY size(commonIngredients) DESC
+LIMIT 10
+----
+
+The query above:
+
+* finds all the ingredients in the seriously rich chocolate cake
+* finds other recipes that also contain these ingredients
+* returns the recipes that contain the most common ingredients
+
+== What other recipes has the author published?
+
+[source, cypher]
+----
+MATCH (rec:Recipe)<-[:WROTE]-(a:Author)-[:WROTE]->(r:Recipe {id:'97123'})
+RETURN rec.id, rec.title, rec.description
+----
+
+== What can I make with the ingredients in my kitchen?
+=== Show me the chillis
+
+[source, cypher]
+----
+MATCH (r:Recipe)
+WHERE (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {value: "chilli"})
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.value]
+       AS ingredients
+----
+
+== What can I make with the ingredients in my kitchen?
+=== Recipes with multiple ingredients (Part 1)
+
+[source,cypher]
+----
+MATCH (r:Recipe)
+WHERE (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {value: "chilli"})
+AND   (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {value: "prawn"})
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.value]
+       AS ingredients
+LIMIT 20
+----
+
+== What can I make with the ingredients in my kitchen?
+=== Recipes with multiple ingredients (Part 2)
+
+[source,cypher]
+----
+:param ingredients =>   ["chilli", "prawn"];
+----
+
+[source,cypher]
+----
+MATCH (r:Recipe)
+WHERE all(i in $ingredients WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {value: i})))
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.value]
+       AS ingredients
+ORDER BY size(ingredients)
+LIMIT 20
+----
+
+== Mark's allergic to all the things
+
+[source,cypher]
+----
+:param allergens =>   ["egg", "milk"];
+:param ingredients => ["coconut milk", "rice"];
+----
+
+[source, cypher]
+----
+MATCH (r:Recipe)
+
+WHERE all(i in $ingredients WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {value: i})))
+AND none(i in $allergens WHERE exists(
+  (r)-[:CONTAINS_INGREDIENT]->(:Ingredient {value: i})))
+
+RETURN r.title AS recipe,
+       [(r)-[:CONTAINS_INGREDIENT]->(i) | i.value]
+       AS ingredients
+ORDER BY size(ingredients)
+LIMIT 20
+----
