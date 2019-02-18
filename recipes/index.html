@@ -54,11 +54,11 @@
     <br/>
     <div>
       <div class="col-lg-6">
-<img src="//localhost:8001/img/pole_model_visual.jpeg" class="img-responsive">
+<img width="300px" src="https://www.bbcgoodfood.com/sites/default/files/styles/recipe/public/recipe/recipe-image/2019/01/dark-chocolate-pudding-with-malted-cream.jpg" class="img-responsive">
 </div>
 <div class="col-lg-6">
 <div class="paragraph">
-<p>This guide will demonstrate how Neo4j can be used to make sense of recipes data.</p>
+<p>This guide will demonstrate how Neo4j can be used to make sense of <a href="https://www.bbcgoodfood.com/" target="_blank">BBC GoodFood</a> recipes data.</p>
 </div>
 </div>
 	</div>
@@ -72,7 +72,11 @@
     <h3>Data Import</h3>
     <br/>
     <div>
-      <div class="listingblock">
+      <div class="paragraph">
+<p>First up let&#8217;s import the data.
+We can do this by executing the following queries:</p>
+</div>
+<div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CREATE INDEX ON :Recipe(id);
 CREATE INDEX ON :Ingredient(name);
@@ -154,12 +158,16 @@ FOREACH (collection IN collections |
     <br/>
     <div>
       <div class="paragraph">
-<p>Let&#8217;s review the metagraph, and see the types of nodes and relationships we&#8217;re going to be working with.</p>
+<p>Now let&#8217;s review the metagraph, and see the types of nodes and relationships we&#8217;re going to be working with.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre mode="cypher"  class="highlight pre-scrollable programlisting cm-s-neo code runnable standalone-example ng-binding" data-lang="cypher" lang="cypher"><!--code class="cypher language-cypher"-->CALL db.schema()<!--/code--></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>We can see that the graph is based around Recipes, which are then connected to several other entities.
+A recipe contains Ingredients, can be part of a Collection, is written by an Author, can form part of a DietType, and has certain Keywords.</p>
 </div>
 	</div>
   </div>

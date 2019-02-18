@@ -13,7 +13,7 @@
 
 [subs=attributes]
 ++++
-<img src="{img}/pole_model_visual.jpeg" class="img-responsive">
+<img width="300px" src="https://www.bbcgoodfood.com/sites/default/files/styles/recipe/public/recipe/recipe-image/2019/01/dark-chocolate-pudding-with-malted-cream.jpg" class="img-responsive">
 ++++
 
 ++++
@@ -24,7 +24,7 @@
 <div class="col-lg-6">
 ++++
 
-This guide will demonstrate how Neo4j can be used to make sense of recipes data.
+This guide will demonstrate how Neo4j can be used to make sense of https://www.bbcgoodfood.com/[BBC GoodFood^] recipes data.
 
 
 ++++
@@ -32,6 +32,9 @@ This guide will demonstrate how Neo4j can be used to make sense of recipes data.
 ++++
 
 == Data Import
+
+First up let's import the data.
+We can do this by executing the following queries:
 
 [source, cypher]
 ----
@@ -106,12 +109,15 @@ FOREACH (collection IN collections |
 
 == Graph Schema
 
-Let's review the metagraph, and see the types of nodes and relationships we're going to be working with.
+Now let's review the metagraph, and see the types of nodes and relationships we're going to be working with.
 
 [source,cypher]
 ----
 CALL db.schema()
 ----
+
+We can see that the graph is based around Recipes, which are then connected to several other entities.
+A recipe contains Ingredients, can be part of a Collection, is written by an Author, can form part of a DietType, and has certain Keywords.
 
 == Most common ingredients
 
